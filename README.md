@@ -4,6 +4,11 @@ A small fullscreen Web kiosk for Raspberry Pi OS Lite and Debian 13
 (Trixie). It uses Cage as a minimal Wayland compositor and Cog/WPE WebKit as
 the browser, without installing a desktop environment.
 
+The repository is intentionally generic. It does not contain a default Web
+address, Wi-Fi configuration, passwords, SSH keys, or organization-specific
+settings. The target URL and existing Linux username are selected when the
+installer is run.
+
 This project was validated on a Raspberry Pi 3 Model A+ with 512 MB RAM using:
 
 - Raspberry Pi OS Lite 32-bit, Debian 13 (Trixie)
@@ -38,28 +43,44 @@ sudo apt full-upgrade -y
 sudo reboot
 ```
 
-## Install
+## Quick start
 
-Clone or copy this private repository to the Pi, then run:
+Clone the repository to the Pi:
 
 ```bash
+git clone https://github.com/DakotaS96/lightweight-cog-kiosk.git
 cd lightweight-cog-kiosk
-chmod +x install.sh uninstall.sh scripts/lightweight-cog-kiosk-refresh
-sudo ./install.sh \
-  --user sadmin \
+```
+
+When logged in as the account that should run the kiosk, install with:
+
+```bash
+sudo bash ./install.sh \
   --url "https://example.com" \
   --refresh-minutes 30
 ```
 
-Replace the example URL and username for the target kiosk.
+The installer uses the account that invoked `sudo`. To run the kiosk under a
+different existing account, specify it explicitly:
+
+```bash
+sudo bash ./install.sh \
+  --user kioskuser \
+  --url "https://example.com" \
+  --refresh-minutes 30
+```
+
+Replace the example URL and username for the target kiosk. The specified user
+must already exist; the installer deliberately does not create accounts or
+manage passwords.
 
 The installer is safe to rerun when changing the URL or refresh interval.
 
-## Central signage page example
+## Centrally managed signage example
 
 ```bash
-sudo ./install.sh \
-  --user sadmin \
+sudo bash ./install.sh \
+  --user kioskuser \
   --url "https://signage.example.com/device-name.html" \
   --refresh-minutes 30
 ```
@@ -71,6 +92,22 @@ The URL is stored locally in:
 ```
 
 No organization-specific URL is committed to this repository.
+
+## Per-device deployment
+
+For installations that use a standard account name, create that account while
+flashing the operating system, then provide it at installation time:
+
+```bash
+sudo bash ./install.sh \
+  --user kioskuser \
+  --url "https://signage.example.com/device-name.html" \
+  --refresh-minutes 30
+```
+
+There is no need to fork or maintain a private copy merely to use a different
+username. Keep organization-specific URLs and credentials in deployment
+documentation or a separate private configuration system.
 
 ## Administration
 
@@ -111,7 +148,7 @@ edit `/etc/default/lightweight-cog-kiosk` and restart the service.
 ## Removing the kiosk
 
 ```bash
-sudo ./uninstall.sh
+sudo bash ./uninstall.sh
 ```
 
 The uninstaller restores `getty@tty1`, retains the local URL configuration,
@@ -128,3 +165,6 @@ and does not remove shared Debian packages.
 - A systemd service can remain `active` even when page JavaScript is stuck.
   The reload watchdog exists to recover that condition.
 
+## License
+
+Released under the [MIT License](LICENSE).
