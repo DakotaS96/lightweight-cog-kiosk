@@ -1,0 +1,7 @@
+*.log
+*.tmp
+kiosk.env
+kiosk-audit.txt
+.env
+*.env
+*.local
