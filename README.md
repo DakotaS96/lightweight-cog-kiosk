@@ -48,6 +48,8 @@ sudo reboot
 Clone the repository to the Pi:
 
 ```bash
+sudo apt update
+sudo apt install -y git
 git clone https://github.com/DakotaS96/lightweight-cog-kiosk.git
 cd lightweight-cog-kiosk
 ```
