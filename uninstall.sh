@@ -15,6 +15,7 @@ rm -f "/etc/systemd/system/$PROGRAM_NAME.service"
 rm -f "/etc/systemd/system/$PROGRAM_NAME-refresh.service"
 rm -f "/etc/systemd/system/$PROGRAM_NAME-refresh.timer"
 rm -f "/usr/local/sbin/$PROGRAM_NAME-refresh"
+rm -rf "/usr/local/share/$PROGRAM_NAME"
 
 systemctl daemon-reload
 systemctl enable --now getty@tty1.service || true
@@ -22,4 +23,3 @@ systemctl enable --now getty@tty1.service || true
 echo "Kiosk services removed."
 echo "The URL configuration remains at /etc/default/$PROGRAM_NAME."
 echo "Installed Debian packages were not removed."
-

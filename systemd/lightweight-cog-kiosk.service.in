@@ -10,7 +10,6 @@ PAMName=login
 WorkingDirectory=@KIOSK_HOME@
 EnvironmentFile=/etc/default/lightweight-cog-kiosk
 Environment=XDG_RUNTIME_DIR=/run/user/%U
-Environment=WLR_NO_HARDWARE_CURSORS=1
 
 TTYPath=/dev/tty1
 StandardInput=tty-force
@@ -37,4 +36,3 @@ NoNewPrivileges=true
 
 [Install]
 WantedBy=multi-user.target
-

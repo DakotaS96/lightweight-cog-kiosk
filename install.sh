@@ -7,18 +7,21 @@ KIOSK_URL=""
 KIOSK_USER="${SUDO_USER:-}"
 REFRESH_MINUTES=30
 ENABLE_REFRESH=1
+HIDE_CURSOR=1
 
 usage() {
     cat <<'EOF'
 Usage:
   sudo ./install.sh --url URL [--user USER] [--refresh-minutes MINUTES]
-  sudo ./install.sh --url URL [--user USER] --no-refresh
+  sudo ./install.sh --url URL [--user USER] --no-refresh [--show-cursor]
 
 Options:
   --url URL                  Website displayed by Cog (required on first run)
   --user USER                Unprivileged kiosk user (default: invoking user)
   --refresh-minutes MINUTES  Full page reload interval (default: 30)
   --no-refresh               Do not install the periodic reload watchdog
+  --hide-cursor              Hide the mouse cursor (default)
+  --show-cursor              Show the cursor for interactive kiosks
   -h, --help                 Show this help
 EOF
 }
@@ -47,6 +50,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --no-refresh)
             ENABLE_REFRESH=0
+            shift
+            ;;
+        --hide-cursor)
+            HIDE_CURSOR=1
+            shift
+            ;;
+        --show-cursor)
+            HIDE_CURSOR=0
             shift
             ;;
         -h|--help)
@@ -104,10 +115,54 @@ echo "Installing Cog, Cage, media support, fonts, and D-Bus support..."
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install -y "${PACKAGES[@]}"
 
+# Cage 0.3.1 honors XCURSOR_THEME. Install a self-contained transparent
+# Xcursor theme so unattended signage does not leave a pointer over content.
+# The embedded file is a valid 1x1 fully transparent Xcursor image.
+CURSOR_THEME="lightweight-cog-kiosk-transparent"
+CURSOR_BASE="/usr/local/share/$PROGRAM_NAME/icons"
+CURSOR_ROOT="$CURSOR_BASE/$CURSOR_THEME"
+if [[ $HIDE_CURSOR -eq 1 ]]; then
+    install -d -m 0755 "$CURSOR_ROOT/cursors"
+    printf '%s' \
+        'WGN1chAAAAAAAAEAAQAAAAIA/f8YAAAAHAAAACQAAAACAP3/GAAAAAEAAAABAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAA=' \
+        | base64 --decode > "$CURSOR_ROOT/cursors/left_ptr"
+    chmod 0644 "$CURSOR_ROOT/cursors/left_ptr"
+
+    CURSOR_ALIASES=(
+        default arrow top_left_arrow pointer hand1 hand2 text xterm
+        vertical-text crosshair cell help question_arrow progress wait watch
+        left_ptr_watch move fleur all-scroll not-allowed no-drop copy alias
+        context-menu ew-resize ns-resize nesw-resize nwse-resize col-resize
+        row-resize grab grabbing zoom-in zoom-out
+    )
+    for cursor_name in "${CURSOR_ALIASES[@]}"; do
+        ln -sfn left_ptr "$CURSOR_ROOT/cursors/$cursor_name"
+    done
+
+    printf '%s\n' \
+        '[Icon Theme]' \
+        'Name=Lightweight Cog Kiosk Transparent Cursor' \
+        'Comment=Transparent cursor for unattended kiosk displays' \
+        > "$CURSOR_ROOT/index.theme"
+    chmod 0644 "$CURSOR_ROOT/index.theme"
+
+    # Older Cage builds may request the literal theme name "default". Keep
+    # that lookup inside this application's private cursor search path.
+    ln -sfn "$CURSOR_THEME" "$CURSOR_BASE/default"
+fi
+
 install -d -m 0755 /etc/default
 ESCAPED_URL="${KIOSK_URL//\\/\\\\}"
 ESCAPED_URL="${ESCAPED_URL//\"/\\\"}"
-printf 'KIOSK_URL="%s"\n' "$ESCAPED_URL" > "/etc/default/$PROGRAM_NAME"
+{
+    printf 'KIOSK_URL="%s"\n' "$ESCAPED_URL"
+    printf 'KIOSK_HIDE_CURSOR="%s"\n' "$HIDE_CURSOR"
+    if [[ $HIDE_CURSOR -eq 1 ]]; then
+        printf 'XCURSOR_THEME="%s"\n' "$CURSOR_THEME"
+        printf 'XCURSOR_PATH="%s"\n' "$CURSOR_BASE"
+        printf 'XCURSOR_SIZE="24"\n'
+    fi
+} > "/etc/default/$PROGRAM_NAME"
 chmod 0644 "/etc/default/$PROGRAM_NAME"
 
 sed \
@@ -137,10 +192,12 @@ fi
 
 systemctl disable --now getty@tty1.service || true
 systemctl daemon-reload
-systemctl enable --now "$PROGRAM_NAME.service"
+systemctl enable "$PROGRAM_NAME.service"
+systemctl restart "$PROGRAM_NAME.service"
 
 if [[ $ENABLE_REFRESH -eq 1 ]]; then
-    systemctl enable --now "$PROGRAM_NAME-refresh.timer"
+    systemctl enable "$PROGRAM_NAME-refresh.timer"
+    systemctl restart "$PROGRAM_NAME-refresh.timer"
 else
     systemctl disable --now "$PROGRAM_NAME-refresh.timer" 2>/dev/null || true
 fi
@@ -149,6 +206,11 @@ echo
 echo "Installation complete."
 echo "URL: $KIOSK_URL"
 echo "User: $KIOSK_USER"
+if [[ $HIDE_CURSOR -eq 1 ]]; then
+    echo "Mouse cursor: hidden"
+else
+    echo "Mouse cursor: visible"
+fi
 if [[ $ENABLE_REFRESH -eq 1 ]]; then
     echo "Page reload watchdog: every $REFRESH_MINUTES minutes"
 else
@@ -158,4 +220,3 @@ echo
 echo "Check status with:"
 echo "  systemctl status $PROGRAM_NAME.service --no-pager"
 echo "  systemctl status $PROGRAM_NAME-refresh.timer --no-pager"
-

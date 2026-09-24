@@ -22,6 +22,7 @@ This project was validated on a Raspberry Pi 3 Model A+ with 512 MB RAM using:
 - A fullscreen kiosk on `tty1`
 - Automatic startup after boot
 - Automatic restart after a browser or compositor crash
+- A hidden mouse cursor by default for unattended signage
 - The Raspberry Pi OS Trixie Bubblewrap capability fix
 - A periodic page reload watchdog
 - A complete kiosk-service restart when D-Bus page reload fails
@@ -48,8 +49,6 @@ sudo reboot
 Clone the repository to the Pi:
 
 ```bash
-sudo apt update
-sudo apt install -y git
 git clone https://github.com/DakotaS96/lightweight-cog-kiosk.git
 cd lightweight-cog-kiosk
 ```
@@ -61,6 +60,9 @@ sudo bash ./install.sh \
   --url "https://example.com" \
   --refresh-minutes 30
 ```
+
+The cursor is hidden by default. For an interactive kiosk where the pointer
+should remain visible, add `--show-cursor`.
 
 The installer uses the account that invoked `sudo`. To run the kiosk under a
 different existing account, specify it explicitly:
@@ -146,6 +148,9 @@ sudo systemctl restart lightweight-cog-kiosk.service
 
 Change the displayed URL by rerunning the installer with `--url`, or carefully
 edit `/etc/default/lightweight-cog-kiosk` and restart the service.
+
+Show the mouse cursor on an interactive kiosk by rerunning the installer with
+`--show-cursor`. Rerun it with `--hide-cursor` to hide the cursor again.
 
 ## Removing the kiosk
 
