@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -u
+
+KIOSK_USER="${1:-}"
+
+if [[ -z "$KIOSK_USER" ]] || ! id "$KIOSK_USER" >/dev/null 2>&1; then
+    echo "A valid kiosk username is required." >&2
+    exit 2
+fi
+
+KIOSK_UID="$(id -u "$KIOSK_USER")"
+RUNTIME_DIR="/run/user/$KIOSK_UID"
+BUS_ADDRESS="unix:path=$RUNTIME_DIR/bus"
+
+# A normal reload keeps Cage and the display session running. If Cog or its
+# D-Bus control interface is stuck, restart the complete kiosk service.
+if /usr/bin/timeout 15s /usr/sbin/runuser -u "$KIOSK_USER" -- \
+    /usr/bin/env \
+    XDG_RUNTIME_DIR="$RUNTIME_DIR" \
+    DBUS_SESSION_BUS_ADDRESS="$BUS_ADDRESS" \
+    /usr/bin/cogctl reload; then
+    echo "Cog page reload completed."
+    exit 0
+fi
+
+echo "Cog page reload failed; restarting the kiosk service." >&2
+/usr/bin/systemctl restart lightweight-cog-kiosk.service
+

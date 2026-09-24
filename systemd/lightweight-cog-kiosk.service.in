@@ -1,0 +1,40 @@
+[Unit]
+Description=Lightweight Cog kiosk
+Wants=network-online.target
+After=network-online.target systemd-user-sessions.service
+Conflicts=getty@tty1.service
+
+[Service]
+User=@KIOSK_USER@
+PAMName=login
+WorkingDirectory=@KIOSK_HOME@
+EnvironmentFile=/etc/default/lightweight-cog-kiosk
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=WLR_NO_HARDWARE_CURSORS=1
+
+TTYPath=/dev/tty1
+StandardInput=tty-force
+StandardOutput=journal
+StandardError=journal
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+
+ExecStart=/usr/bin/cage -s -- /usr/bin/cog -P wl --bg-color=black --webprocess-failure=restart ${KIOSK_URL}
+
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+KillMode=mixed
+TimeoutStopSec=5
+SendSIGKILL=yes
+
+# Required on Raspberry Pi OS Trixie to prevent Bubblewrap from rejecting
+# capabilities inherited through the systemd/PAM session.
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
+

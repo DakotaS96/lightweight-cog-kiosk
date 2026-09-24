@@ -1,0 +1,14 @@
+[Unit]
+Description=Periodic Cog kiosk page reload
+
+[Timer]
+OnBootSec=@REFRESH_MINUTES@min
+OnUnitActiveSec=@REFRESH_MINUTES@min
+AccuracySec=30s
+RandomizedDelaySec=30s
+Persistent=true
+Unit=lightweight-cog-kiosk-refresh.service
+
+[Install]
+WantedBy=timers.target
+

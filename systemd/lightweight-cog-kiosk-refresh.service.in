@@ -1,0 +1,9 @@
+[Unit]
+Description=Reload the Cog kiosk page, restarting the kiosk if reload fails
+After=lightweight-cog-kiosk.service
+Requires=lightweight-cog-kiosk.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/lightweight-cog-kiosk-refresh @KIOSK_USER@
+
