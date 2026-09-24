@@ -46,11 +46,12 @@ sudo reboot
 
 ## Quick start
 
-Clone the repository to the Pi:
+Install Git, then clone the repository to the Pi:
 
 ```bash
 sudo apt update
 sudo apt install -y git
+
 git clone https://github.com/DakotaS96/lightweight-cog-kiosk.git
 cd lightweight-cog-kiosk
 ```
@@ -81,6 +82,10 @@ must already exist; the installer deliberately does not create accounts or
 manage passwords.
 
 The installer is safe to rerun when changing the URL or refresh interval.
+The first installation may take 10–20 minutes on older Raspberry Pis. The
+installer prints an elapsed-time heartbeat every 30 seconds while packages are
+being installed. Debian's package tools do not provide a reliable percentage
+while rebuilding their manual-page indexes.
 
 ## Centrally managed signage example
 

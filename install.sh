@@ -31,6 +31,20 @@ die() {
     exit 1
 }
 
+package_install_heartbeat() {
+    local started_at=$SECONDS
+    local elapsed minutes seconds
+
+    while sleep 30; do
+        elapsed=$((SECONDS - started_at))
+        minutes=$((elapsed / 60))
+        seconds=$((elapsed % 60))
+        printf '\n[installer] Package installation is still active -- elapsed %dm %02ds.\n' \
+            "$minutes" "$seconds"
+        printf '[installer] Long pauses while Debian rebuilds manual-page indexes are normal.\n'
+    done
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --url)
@@ -113,7 +127,21 @@ PACKAGES=(
 
 echo "Installing Cog, Cage, media support, fonts, and D-Bus support..."
 apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get install -y "${PACKAGES[@]}"
+
+package_install_heartbeat &
+HEARTBEAT_PID=$!
+trap 'kill "$HEARTBEAT_PID" 2>/dev/null || true' EXIT
+
+if ! DEBIAN_FRONTEND=noninteractive apt-get install -y "${PACKAGES[@]}"; then
+    kill "$HEARTBEAT_PID" 2>/dev/null || true
+    wait "$HEARTBEAT_PID" 2>/dev/null || true
+    trap - EXIT
+    die "Package installation failed. Review the apt/dpkg messages above."
+fi
+
+kill "$HEARTBEAT_PID" 2>/dev/null || true
+wait "$HEARTBEAT_PID" 2>/dev/null || true
+trap - EXIT
 
 # Cage 0.3.1 honors XCURSOR_THEME. Install a self-contained transparent
 # Xcursor theme so unattended signage does not leave a pointer over content.
